@@ -164,14 +164,6 @@ function MobileId () {
         return that;
     };
 
-    const _padLeft = function (input, size, padText) {
-        while (input.length < size) {
-            input = padText + input;
-        }
-
-        return input;
-    };
-
     const getCertValue = function (key, cert) {
         let res = {};
         cert[key].typesAndValues.forEach(function (typeAndValue) {
@@ -215,22 +207,19 @@ function MobileId () {
         });
     };
 
-    const _getVerificationCode = function (sessionHash) {
-        const enchash = crypto.createHash('sha256');
-        enchash.update(Buffer.from(sessionHash, 'hex'));
-        const buf = enchash.digest();
-
-        const twoRightmostBytes = buf.slice(-2);
-        const buffer = Buffer.from(twoRightmostBytes);
-        let positiveInteger = buffer.readUInt16BE();
-
-        positiveInteger = (positiveInteger % 10000).toString().substr(-4);
-
-        return _padLeft(positiveInteger, 4, '0');
+    const _getVerificationCode = function (sessionHash, format) {
+        format = format || 'hex';
+        const buf = Buffer.from(sessionHash, format);
+        let binary = '';
+        for (const value of buf.values()) {
+            binary += value.toString(2).padStart(8, '0');
+        }
+        const finalNumber = binary.slice(0, 6) +''+ binary.slice(-7);
+        return parseInt(finalNumber, 2).toString(10).padStart(4, '0');
     };
 
     const _getUserCertificate = function (nationalIdentityNumber, phoneNumber) {
-        return new Promise (function (resolve) {
+        return new Promise (function (resolve, reject) {
             const path = _apiPath + '/certificate';
 
             let params = {
@@ -493,8 +482,7 @@ function MobileId () {
             .then(function (result) {
                 return new Promise(function (resolve, reject) {
                     if (result.data.sessionID) {
-                        const verficationCode = _getVerificationCode(sessionHash);
-
+                        const verficationCode = _getVerificationCode(sessionHash, 'base64');
                         return resolve({
                             sessionId: result.data.sessionID,
                             challengeID: verficationCode,
