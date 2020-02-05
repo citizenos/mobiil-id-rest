@@ -297,6 +297,7 @@ function MobileId () {
                     });
                 } else if (result.data.error) {
                     let err = new Error(result.data.error);
+                    logger.error(err);
                     err.code = result.status;
                     return Promise.reject(err);
                 } else {
@@ -317,7 +318,10 @@ function MobileId () {
             method: 'GET',
             port: _port,
             requestCert: true,
-            requestOCSP: true
+            requestOCSP: true,
+            headers: {
+                'Authorization': 'Bearer ' + _authorizeToken
+            }
         };
 
         return _apiRequest(null, options);
@@ -490,6 +494,7 @@ function MobileId () {
                         });
                     } else if (result.data.error) {
                         let err = new Error(result.data.error);
+                        logger.error(err);
                         err.code = result.statusCode;
 
                         return reject(err);

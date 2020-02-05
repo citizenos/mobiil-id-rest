@@ -1,6 +1,6 @@
 {
   "name": "mobiil-id-rest",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Simple Estonian Mobiil-ID REST client",
   "main": "index.js",
   "scripts": {
@@ -9,8 +9,16 @@
   "keywords": [
     "mobiil-id"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/citizenos/mobiil-id-rest.git"
+  },
   "author": "Ilmar Türk",
   "license": "ISC",
+  "homepage": "https://github.com/citizenos/mobiil-id-rest#readme",
+  "bugs": {
+    "url": "https://github.com/citizenos/mobiil-id-rest/issues"
+  },
   "dependencies": {
     "asn1js": "2.0.26",
     "bluebird": "3.7.2",
