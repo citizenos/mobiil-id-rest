@@ -507,14 +507,14 @@ function MobileId () {
     };
 
     const _statusSign = function (sessionId) {
-        return new Promise(function (resolve, reject) {
+        return new Promise(function (resolve) {
             return _getSessionStatusData('signature', sessionId)
                 .then(function (result) {
                     const data = result.data;
                     if (data.state === 'COMPLETE' && data.result === 'OK') {
                         return resolve(data);
                     }
-                    return reject(data);
+                    return resolve(data);
                 });
         });
     };

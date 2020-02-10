@@ -316,4 +316,28 @@ suite('Sign', function () {
                 done();
             });
     });
+
+    test('Fail - User does not react', function (done) {
+        const phoneNumber = '+37066000266';
+        const nationalIdentityNumber = '50001018908';
+
+        const hash = crypto.createHash('SHA256');
+        hash.update('Sign this text');
+        const finalHash = hash.digest('hex');
+
+        mobiilId
+            .signature(nationalIdentityNumber, phoneNumber, Buffer.from(finalHash, 'hex').toString('base64'))
+            .then(function (result) {
+                assert.match(result.challengeID, /[0-9]{4}/);
+
+                mobiilId.statusSign(result.sessionId)
+                    .then(function (authResult) {
+                        assert.equal(authResult.state, 'COMPLETE');
+                        assert.equal(authResult.result, 'TIMEOUT');
+
+                        done();
+                    }).catch(done);
+
+            });
+    });
 });
