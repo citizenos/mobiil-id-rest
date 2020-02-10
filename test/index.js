@@ -330,7 +330,7 @@ suite('Sign', function () {
             .then(function (result) {
                 assert.match(result.challengeID, /[0-9]{4}/);
 
-                mobiilId.statusSign(result.sessionId)
+                mobiilId.statusSign(result.sessionId, 10000)
                     .then(function (authResult) {
                         assert.equal(authResult.state, 'COMPLETE');
                         assert.equal(authResult.result, 'TIMEOUT');

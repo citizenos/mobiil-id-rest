@@ -436,8 +436,8 @@ function MobileId () {
             });
     };
 
-    const _statusAuth = function (sessionId, sessionHash) {
-        return _getSessionStatusData('authentication', sessionId)
+    const _statusAuth = function (sessionId, sessionHash, timeoutMs) {
+        return _getSessionStatusData('authentication', sessionId, timeoutMs)
             .then(function (result) {
                 const data = result.data;
                 if (data.state === 'COMPLETE' && data.result === 'OK') {
@@ -506,9 +506,9 @@ function MobileId () {
             });
     };
 
-    const _statusSign = function (sessionId) {
+    const _statusSign = function (sessionId, timeoutMs) {
         return new Promise(function (resolve) {
-            return _getSessionStatusData('signature', sessionId)
+            return _getSessionStatusData('signature', sessionId, timeoutMs)
                 .then(function (result) {
                     const data = result.data;
                     if (data.state === 'COMPLETE' && data.result === 'OK') {
