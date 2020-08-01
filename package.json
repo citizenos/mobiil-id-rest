@@ -22,7 +22,7 @@
   "dependencies": {
     "asn1js": "2.0.26",
     "bluebird": "3.7.2",
-    "elliptic": "6.5.2",
+    "elliptic": "6.5.3",
     "log4js": "6.1.0",
     "node-forge": "0.9.1",
     "pkijs": "2.1.84",
