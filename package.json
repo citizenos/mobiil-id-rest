@@ -24,7 +24,7 @@
     "bluebird": "3.7.2",
     "elliptic": "6.5.2",
     "log4js": "6.1.0",
-    "node-forge": "0.9.1",
+    "node-forge": "0.10.0",
     "pkijs": "2.1.84",
     "rsautl": "git+https://github.com/citizenos/rsautl.git#1f6ef42c77aee80d8c114de8260c24cf6bc7005e"
   },
