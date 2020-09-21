@@ -105,16 +105,17 @@ function MobileId () {
         }
     }
 
-    const _createHash = function (input = '', hashType) {
+    const _createHash = async function (input = '', hashType) {
         input = input.toString() || crypto.randomBytes(20).toString();
         hashType = hashType || 'sha256';
 
         const hash = crypto.createHash(hashType);
         hash.update(input);
+
         return hash.digest('hex');
     };
 
-    const _apiRequest = function (params, options) {
+    const _apiRequest = async function (params, options) {
         return new Promise(function (resolve, reject) {
             const request = https.request(options, function (result) {
                 let data = '';
@@ -146,7 +147,7 @@ function MobileId () {
         });
     };
 
-    const _init = function (options) {
+    const _init = async function (options) {
         _replyingPartyUUID = options.relyingPartyUUID;
         _replyingPartyName = options.replyingPartyName;
         _authorizeToken = options.authorizeToken;
@@ -164,7 +165,7 @@ function MobileId () {
         return that;
     };
 
-    const getCertValue = function (key, cert) {
+    const getCertValue = async function (key, cert) {
         let res = {};
         cert[key].typesAndValues.forEach(function (typeAndValue) {
             const type = typeAndValue.type;
@@ -176,7 +177,7 @@ function MobileId () {
         return res;
     };
 
-    const _prepareCert = function (certificateString, format) {
+    const _prepareCert = async function (certificateString, format) {
         if (typeof certificateString !== 'string') {
             throw new Error('Expected PEM as string, recieved:' + typeof certificateString);
         }
@@ -194,20 +195,20 @@ function MobileId () {
         return cert;
     };
 
-    const _getCertUserData = function (certificate, format) {
-        const cert = _prepareCert(certificate, format);
-        const subject = getCertValue('subject', cert);
+    const _getCertUserData = async function (certificate, format) {
+        const cert = await _prepareCert(certificate, format);
+        const subject = await getCertValue('subject', cert);
         const pid = subject.CommonName.split(',').filter(function (item) {return item !== subject.GivenName && item !== subject.SurName})[0];
 
-        return Promise.resolve({
+        return {
             firstName: subject.GivenName,
             lastName: subject.SurName,
             pid,
             country: subject.Country
-        });
+        };
     };
 
-    const _getVerificationCode = function (sessionHash, format) {
+    const _getVerificationCode = async function (sessionHash, format) {
         format = format || 'hex';
         const buf = Buffer.from(sessionHash, format);
         let binary = '';
@@ -215,11 +216,11 @@ function MobileId () {
             binary += value.toString(2).padStart(8, '0');
         }
         const finalNumber = binary.slice(0, 6) +''+ binary.slice(-7);
+
         return parseInt(finalNumber, 2).toString(10).padStart(4, '0');
     };
 
-    const _getUserCertificate = function (nationalIdentityNumber, phoneNumber) {
-        return new Promise (function (resolve, reject) {
+    const _getUserCertificate = async function (nationalIdentityNumber, phoneNumber) {
             const path = _apiPath + '/certificate';
 
             let params = {
@@ -243,22 +244,17 @@ function MobileId () {
                 }
             };
 
-            return _apiRequest(params, options)
-                .then(function (result) {
-                    if (result.data && result.data.cert) {
-                        return _validateCert(_prepareCert(result.data.cert, 'base64'))
-                            .then(function () {
-                                return resolve(result.data.cert);
-                            });
-                    }
+            const result = await _apiRequest(params, options);
+            if (result.data && result.data.cert) {
+                await _validateCert(await _prepareCert(result.data.cert, 'base64'))
+                return result.data.cert;
+            }
 
-                    return resolve(result);
-                });
-        });
+            return result;
     };
 
-    const _authenticate = function (nationalIdentityNumber, phoneNumber, language) {
-        const sessionHash = _createHash();
+    const _authenticate = async function (nationalIdentityNumber, phoneNumber, language) {
+        const sessionHash = await _createHash();
         const path = _apiPath + '/authentication';
         language = LANGUAGES[language] || LANGUAGES.en;
         const hashType = 'sha256';
@@ -287,26 +283,25 @@ function MobileId () {
             }
         };
 
-        return _apiRequest(params, options)
-            .then(function (result) {
-                if (result.data.sessionID) {
-                    return Promise.resolve({
-                        sessionId: result.data.sessionID,
-                        challengeID: _getVerificationCode(sessionHash),
-                        sessionHash
-                    });
-                } else if (result.data.error) {
-                    let err = new Error(result.data.error);
-                    logger.error(err);
-                    err.code = result.status;
-                    return Promise.reject(err);
-                } else {
-                    return Promise.resolve(result);
-                }
-            });
+        const result = await _apiRequest(params, options);
+        if (result.data.sessionID) {
+            return {
+                sessionId: result.data.sessionID,
+                challengeID: await _getVerificationCode(sessionHash),
+                sessionHash
+            };
+        } else if (result.data.error) {
+            let err = new Error(result.data.error);
+            logger.error(err);
+            err.code = result.status;
+
+            throw err;
+        } else {
+            return result;
+        }
     };
 
-    const _getSessionStatusData = function (type, sessionId, timeout) {
+    const _getSessionStatusData = async function (type, sessionId, timeout) {
 
         let path = _apiPath + '/' + type + '/session/:sessionId'.replace(':sessionId', sessionId);
         if (timeout) {
@@ -327,35 +322,37 @@ function MobileId () {
         return _apiRequest(null, options);
     };
 
-    const _validateEC = function (cert,hash, signatureString) {
-        return new Promise (function (resolve) {
-            const ec = new EC('p256');
-            const publicKeyData = {
-                x: Buffer.from(cert.subjectPublicKeyInfo.parsedKey.x).toString('hex'),
-                y: Buffer.from(cert.subjectPublicKeyInfo.parsedKey.y).toString('hex')
-            };
-            const key = ec.keyFromPublic(publicKeyData, 'hex');
+    const _validateEC = async function (cert,hash, signatureString) {
+        const ec = new EC('p256');
+        const publicKeyData = {
+            x: Buffer.from(cert.subjectPublicKeyInfo.parsedKey.x).toString('hex'),
+            y: Buffer.from(cert.subjectPublicKeyInfo.parsedKey.y).toString('hex')
+        };
+        const key = ec.keyFromPublic(publicKeyData, 'hex');
 
-            // Splits to 2 halfs
-            const m = Buffer.from(signatureString, 'base64').toString('hex').match(/([a-f\d]{64})/gi);
+        // Splits to 2 halfs
+        const m = Buffer.from(signatureString, 'base64').toString('hex').match(/([a-f\d]{64})/gi);
 
-            const signature = {
-                r: m[0],
-                s: m[1]
-            };
+        const signature = {
+            r: m[0],
+            s: m[1]
+        };
 
-            return resolve(key.verify(hash, signature));
-        });
+        return key.verify(hash, signature);
     };
 
-    const _validateRSA = function (cert, hash, signatureString) {
+    const _validateRSA = async function (cert, hash, signatureString) {
         return new Promise (function (resolve) {
             const publicKey = forge.pki.publicKeyToPem(cert.publicKey);
             const sha256Prefix = [0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20];
             const items = [Buffer.from(sha256Prefix), Buffer.from(hash, 'hex')];
 
             return rsautl.verify(signatureString, publicKey, function (err, verified) {
-                if (err) logger.error('ERROR', err);
+                if (err) {
+                    logger.error('ERROR', err);
+                    throw err;
+                }
+
                 const verificationResult = Buffer.from(verified).toString('hex');
                 const prefixedHash = Buffer.concat(items).toString('hex')
 
@@ -383,79 +380,68 @@ function MobileId () {
         return true;
     };
 
-    const _validateIssuer = function (cert) {
-        return new Promise(function (resolve, reject) {
-            let IssuerData = {};
-            cert.issuer.typesAndValues.map(function (item) {
-                IssuerData[OID[item.type].short] = item.value.valueBlock.value;
-            });
-
-            let isValid = false;
-
-            _issuers.forEach(function (issuer) {
-                if (_isEquivalent(issuer, IssuerData)) {
-                    isValid = true;
-                }
-            });
-
-            if(!isValid) {
-                logger.error('Invalid issuer: ' + JSON.stringify(IssuerData));
-                return reject(new ValidationError('Invalid certificate issuer'));
-            }
-
-            return resolve();
+    const _validateIssuer = async function (cert) {
+        let IssuerData = {};
+        cert.issuer.typesAndValues.map(function (item) {
+            IssuerData[OID[item.type].short] = item.value.valueBlock.value;
         });
+
+        let isValid = false;
+
+        _issuers.forEach(function (issuer) {
+            if (_isEquivalent(issuer, IssuerData)) {
+                isValid = true;
+            }
+        });
+
+        if(!isValid) {
+            logger.error('Invalid issuer: ' + JSON.stringify(IssuerData));
+            throw new ValidationError('Invalid certificate issuer');
+        }
+
+        return true;
     };
 
-    const _validateCert = function (cert, format) {
+    const _validateCert = async function (cert, format) {
         if (typeof cert === 'string' && format) {
-            cert = _prepareCert(cert, format);
+            cert = await _prepareCert(cert, format);
         }
 
         const now = new Date();
 
         if (now <= new Date(cert.notBefore.value) ||  now >= new Date(cert.notAfter.value)) {
-            return Promise.reject(new ValidationError('Certificate not active'));
+            throw new ValidationError('Certificate not active');
         }
 
         return _validateIssuer(cert);
     };
 
-    const _validateAuthorization = function (authResponse, sessionHash) {
-        const cert = _prepareCert(authResponse.cert, 'base64');
+    const _validateAuthorization = async function (authResponse, sessionHash) {
+        const cert = await _prepareCert(authResponse.cert, 'base64');
 
-        return _validateCert(cert)
-            .then(function () {
-                if (cert.subjectPublicKeyInfo.parsedKey.x && cert.subjectPublicKeyInfo.parsedKey.y) {
-                    return _validateEC(cert, sessionHash, authResponse.signature.value);
-                }
+        await _validateCert(cert);
+        if (cert.subjectPublicKeyInfo.parsedKey.x && cert.subjectPublicKeyInfo.parsedKey.y) {
+            return _validateEC(cert, sessionHash, authResponse.signature.value);
+        }
 
-                const certPem = forge.pki.certificateFromPem('-----BEGIN CERTIFICATE-----\n' +authResponse.cert.value + '\n-----END CERTIFICATE-----');
+        const certPem = forge.pki.certificateFromPem('-----BEGIN CERTIFICATE-----\n' +authResponse.cert.value + '\n-----END CERTIFICATE-----');
 
-                return _validateRSA(certPem, sessionHash, authResponse.signature.value);
-            });
+        return _validateRSA(certPem, sessionHash, authResponse.signature.value);
     };
 
-    const _statusAuth = function (sessionId, sessionHash, timeoutMs) {
-        return _getSessionStatusData('authentication', sessionId, timeoutMs)
-            .then(function (result) {
-                const data = result.data;
-                if (data.state === 'COMPLETE' && data.result === 'OK') {
-                    return _validateAuthorization(result.data, sessionHash)
-                        .then(function () {
-                            return _getCertUserData(data.cert, 'base64')
-                                .then(function (personalInfo) {
-                                    data.personalInfo = personalInfo;
-                                    return data;
-                                });
-                        });
-                }
+    const _statusAuth = async function (sessionId, sessionHash, timeoutMs) {
+        const data = (await _getSessionStatusData('authentication', sessionId, timeoutMs)).data;
+        if (data.state === 'COMPLETE' && data.result === 'OK') {
+            await _validateAuthorization(data, sessionHash);
+            const personalInfo = await _getCertUserData(data.cert, 'base64');
+            data.personalInfo = personalInfo;
+            return data;
+        }
 
-                return data;
-            });
+        return data;
     };
 
-    const _signature = function (nationalIdentityNumber, phoneNumber, sessionHash, language) {
+    const _signature = async function (nationalIdentityNumber, phoneNumber, sessionHash, language) {
         const hashType = 'sha256';
         language = LANGUAGES[language] || LANGUAGES.en;
 
@@ -482,41 +468,28 @@ function MobileId () {
             }
         };
 
-        return _apiRequest(params, options)
-            .then(function (result) {
-                return new Promise(function (resolve, reject) {
-                    if (result.data.sessionID) {
-                        const verficationCode = _getVerificationCode(sessionHash, 'base64');
-                        return resolve({
-                            sessionId: result.data.sessionID,
-                            challengeID: verficationCode,
-                            sessionHash: sessionHash
-                        });
-                    } else if (result.data.error) {
-                        let err = new Error(result.data.error);
-                        logger.error(err);
-                        err.code = result.statusCode;
+        const result = await _apiRequest(params, options);
+            if (result.data.sessionID) {
+                const verficationCode = await _getVerificationCode(sessionHash, 'base64');
 
-                        return reject(err);
-                    } else {
-                        return resolve(result);
-                    }
+                return {
+                    sessionId: result.data.sessionID,
+                    challengeID: verficationCode,
+                    sessionHash: sessionHash
+                };
+            } else if (result.data.error) {
+                let err = new Error(result.data.error);
+                logger.error(err);
+                err.code = result.statusCode;
 
-                });
-            });
+                throw err;
+            } else {
+                return result;
+            }
     };
 
-    const _statusSign = function (sessionId, timeoutMs) {
-        return new Promise(function (resolve) {
-            return _getSessionStatusData('signature', sessionId, timeoutMs)
-                .then(function (result) {
-                    const data = result.data;
-                    if (data.state === 'COMPLETE' && data.result === 'OK') {
-                        return resolve(data);
-                    }
-                    return resolve(data);
-                });
-        });
+    const _statusSign = async function (sessionId, timeoutMs) {
+        return (await _getSessionStatusData('signature', sessionId, timeoutMs)).data;
     };
 
     return {
