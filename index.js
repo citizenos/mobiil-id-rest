@@ -248,6 +248,8 @@ function MobileId () {
             if (result.data && result.data.cert) {
                 await _validateCert(await _prepareCert(result.data.cert, 'base64'))
                 return result.data.cert;
+            } else if (result.data.error) {
+                throw new Error(result.data.error);
             }
 
             return result;
