@@ -6,7 +6,6 @@
 function MobileId () {
     const that = this;
     const crypto = require('crypto');
-    const Promise = require('bluebird');
     const https = require('https');
     const logger = require('log4js').getLogger();
     const Pkijs = require('pkijs');
