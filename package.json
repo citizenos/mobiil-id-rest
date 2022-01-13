@@ -20,15 +20,15 @@
     "url": "https://github.com/citizenos/mobiil-id-rest/issues"
   },
   "dependencies": {
-    "asn1js": "2.1.1",
+    "asn1js": "2.2.0",
     "elliptic": "6.5.4",
     "log4js": "6.3.0",
-    "node-forge": "0.10.0",
-    "pkijs": "2.1.96",
-    "rsautl": "git+https://github.com/citizenos/rsautl.git#1f6ef42c77aee80d8c114de8260c24cf6bc7005e"
+    "node-forge": "1.2.1",
+    "pkijs": "2.2.1",
+    "simple_rsautl": "1.0.0"
   },
   "devDependencies": {
     "chai": "4.3.4",
-    "mocha": "9.0.3"
+    "mocha": "9.1.3"
   }
 }

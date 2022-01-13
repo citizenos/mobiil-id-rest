@@ -12,7 +12,7 @@ function MobileId () {
     const Asn1js = require('asn1js');
     const EC = require('elliptic').ec;
     const forge = require('node-forge');
-    const rsautl = require('rsautl');
+    const rsautl = require('simple_rsautl');
 
     let _replyingPartyUUID;
     let _replyingPartyName;
@@ -343,23 +343,15 @@ function MobileId () {
     };
 
     const _validateRSA = async function (cert, hash, signatureString) {
-        return new Promise (function (resolve) {
-            const publicKey = forge.pki.publicKeyToPem(cert.publicKey);
-            const sha256Prefix = [0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20];
-            const items = [Buffer.from(sha256Prefix), Buffer.from(hash, 'hex')];
+        const publicKey = forge.pki.publicKeyToPem(cert.publicKey);
+        const sha256Prefix = [0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20];
+        const items = [Buffer.from(sha256Prefix), Buffer.from(hash, 'hex')];
 
-            return rsautl.verify(signatureString, publicKey, function (err, verified) {
-                if (err) {
-                    logger.error('ERROR', err);
-                    throw err;
-                }
+        const verified = await rsautl.verify(signatureString, publicKey, {padding: null, encoding: null});
+        const verificationResult = Buffer.from(verified).toString('hex');
+        const prefixedHash = Buffer.concat(items).toString('hex')
 
-                const verificationResult = Buffer.from(verified).toString('hex');
-                const prefixedHash = Buffer.concat(items).toString('hex')
-
-                return resolve(verificationResult === prefixedHash);
-            }, {padding: null, encoding: null});
-        });
+        return (verificationResult === prefixedHash);
     };
 
     const _isEquivalent = function (a, b) {
