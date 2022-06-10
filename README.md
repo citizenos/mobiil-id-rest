@@ -32,27 +32,22 @@ mobiilIdClient.init({
 
 ### Authenticate
 ```javascript
-mobiilId
-    .authenticate(nationalIdentityNumber, phoneNumber)
-    .then(function (result) {
-        mobiilId
-            .statusAuth(result.sessionId, result.sessionHash)
-            .then(function (authResult) {
-                /*
-                authResult contains response from API, see https://github.com/SK-EID/MID#335-response-structure
-                */
-                mobiilId
-                    .getCertUserData(authResult.cert)
-                    .then(function (personalInfo) {
-                        /* With structure {
-                            firstName: subject.GivenName,
-                            lastName: subject.SurName,
-                            pid,
-                            country: subject.Country
-                        }*/
-                    });
-            });
-    });
+const result = await mobiilId.authenticate(nationalIdentityNumber, phoneNumber);
+const authResult = await mobiilId.statusAuth(result.sessionId, result.sessionHash);
+/*
+    authResult contains response from API, see https://github.com/SK-EID/MID#335-response-structure
+*/
+const personalInfo = await mobiilId.getCertUserData(authResult.cert);
+
+/*
+    personalInfo with structure:
+    {
+        firstName: subject.GivenName,
+        lastName: subject.SurName,
+        pid,
+        country: subject.Country
+    }
+*/
 ```
 
 ### Sign
@@ -64,16 +59,11 @@ const hash = crypto.createHash('SHA256');
 hash.update('Sign this text');
 const finalHash = hash.digest('hex');
 
-mobiilId
-        .signature(nationalIdentityNumber, phoneNumber, Buffer.from(finalHash, 'hex').toString('base64'))
-        .then(function (result) {
-            mobiilId.statusSign(result.sessionId)
-                .then(function(signResult) {
-                    /*
-                    signResult contains response from API, see https://github.com/SK-EID/MID#335-response-structure
-                    */
-                });
-        })
+const resutl = await mobiilId.signature(nationalIdentityNumber, phoneNumber, Buffer.from(finalHash, 'hex').toString('base64'));
+const signResult = await mobiilId.statusSign(result.sessionId);
+/*
+    signResult contains response from API, see https://github.com/SK-EID/MID#335-response-structure
+*/
 ```
 
 ## Credits
