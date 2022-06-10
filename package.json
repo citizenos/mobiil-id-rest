@@ -1,6 +1,6 @@
 {
   "name": "mobiil-id-rest",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Simple Estonian Mobiil-ID REST client",
   "main": "index.js",
   "scripts": {
