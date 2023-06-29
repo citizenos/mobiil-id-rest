@@ -197,7 +197,7 @@ function MobileId () {
     const _getCertUserData = async function (certificate, format) {
         const cert = await _prepareCert(certificate, format);
         const subject = await getCertValue('subject', cert);
-        const pid = subject.CommonName.split(',').filter(function (item) {return item !== subject.GivenName && item !== subject.SurName})[0];
+        const pid = subject.DeviceSerialNumber || subject.CommonName.split(',').filter(function (item) {return item !== subject.GivenName && item !== subject.SurName})[0];
 
         return {
             firstName: subject.GivenName,

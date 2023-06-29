@@ -93,17 +93,17 @@ suite('Auth', function () {
     test('Success - Estonian mobile number and PID', async function () {
         this.timeout(10000); //eslint-disable-line no-invalid-this
 
-        const phoneNumber = '+37200000766';
-        const nationalIdentityNumber = '60001019906';
+        const phoneNumber = '+37268000769';
+        const nationalIdentityNumber = '60001017869';
 
         const result = await mobiilId.authenticate(nationalIdentityNumber, phoneNumber);
         assert.match(result.challengeID, /[0-9]{4}/);
 
         const authResult = await mobiilId.statusAuth(result.sessionId, result.sessionHash);
         const personalInfo = {
-            firstName: 'MARY ÄNN',
-            lastName: 'O’CONNEŽ-ŠUSLIK TESTNUMBER',
-            pid: '60001019906',
+            firstName: 'EID2016',
+            lastName: 'TESTNUMBER',
+            pid: 'PNOEE-60001017869',
             country: 'EE'
         };
 
