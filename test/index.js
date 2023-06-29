@@ -103,7 +103,7 @@ suite('Auth', function () {
         const personalInfo = {
             firstName: 'EID2016',
             lastName: 'TESTNUMBER',
-            pid: 'PNOEE-60001017869',
+            pid: '60001017869',
             country: 'EE'
         };
 
@@ -228,8 +228,8 @@ suite('Sign', function () {
     test('Success - Estonian mobile number and PID', async function () {
         this.timeout(15000); //eslint-disable-line no-invalid-this
 
-        const phoneNumber = '+37200000766';
-        const nationalIdentityNumber = '60001019906';
+        const phoneNumber = '+37268000769';
+        const nationalIdentityNumber = '60001017869';
         const hash = crypto.createHash('SHA256');
         hash.update('Sign this text');
         const finalHash = hash.digest('hex');
