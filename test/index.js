@@ -8,37 +8,27 @@ const testConfig = {
     issuers: [
         {
           "C": "EE",
-          "O": "AS Sertifitseerimiskeskus",
+          "O": "SK ID Solutions AS",
           "OID": "NTREE-10747013",
-          "CN": "TEST of EID-SK 2015"
-        },
-        {
-          "C": "EE",
-          "O": "AS Sertifitseerimiskeskus",
-          "OID": "NTREE-10747013",
-          "CN": "EID-SK 2016"
+          "CN": "TEST of SK ID Solutions EID-Q 2024E"
         },
         {
           "C": "EE",
           "O": "SK ID Solutions AS",
           "OID": "NTREE-10747013",
-          "CN": "ESTEID2018"
+          "CN": "TEST of SK ID Solutions EID-NQ 2024E"
         },
         {
-          "CN": "ESTEID-SK 2011",
-          "O": "AS Sertifitseerimiskeskus",
-          "C": "EE"
-        },
-        {
-          "CN": "EID-SK 2011",
-          "O": "AS Sertifitseerimiskeskus",
-          "C": "EE"
-        },
-        {
-          "CN": "ESTEID-SK 2015",
+          "C": "EE",
+          "O": "SK ID Solutions AS",
           "OID": "NTREE-10747013",
-          "O": "AS Sertifitseerimiskeskus",
-          "C": "EE"
+          "CN": "TEST of SK ID Solutions EID-Q 2021E"
+        },
+        {
+          "C": "EE",
+          "O": "SK ID Solutions AS",
+          "OID": "NTREE-10747013",
+          "CN": "TEST of SK ID Solutions EID-NQ 2021E"
         },
         {
           "C": "EE",
@@ -56,31 +46,31 @@ const testConfig = {
           "C": "EE",
           "O": "AS Sertifitseerimiskeskus",
           "OID": "NTREE-10747013",
-          "CN": "TEST of ESTEID-SK 2015"
+          "CN": "EID-SK 2016"
         },
         {
           "C": "EE",
           "O": "AS Sertifitseerimiskeskus",
           "OID": "NTREE-10747013",
-          "CN": "TEST of ESTEID-SK 2016"
+          "CN": "TEST of ESTEID-SK 2015"
         },
         {
-          "C":"EE",
-          "O":"AS Sertifitseerimiskeskus",
-          "CN":"TEST of EID-SK 2011",
-          "E":"pki@sk.ee"
+          "C": "EE",
+          "O": "SK ID Solutions AS",
+          "OID": "NTREE-10747013",
+          "CN": "ESTEID2018"
         }
       ]
 };
 
 const assert = require('chai').assert;
 const crypto = require('crypto');
-const mobiilId = require('../index.js')();
+const mobiilId = require('../dist/index.js')();
 mobiilId.init(testConfig);
 
 suite('Certificate', function () {
     test('Success', async function () {
-        this.timeout(5000); //eslint-disable-line no-invalid-this
+        this.timeout(10000); //eslint-disable-line no-invalid-this
 
         const phoneNumber = '+37200000766';
         const nationalIdentityNumber = '60001019906';
@@ -91,19 +81,19 @@ suite('Certificate', function () {
 });
 suite('Auth', function () {
     test('Success - Estonian mobile number and PID', async function () {
-        this.timeout(10000); //eslint-disable-line no-invalid-this
+        this.timeout(120000); //eslint-disable-line no-invalid-this
 
-        const phoneNumber = '+37268000769';
-        const nationalIdentityNumber = '60001017869';
+        const phoneNumber = '+37200000766';
+        const nationalIdentityNumber = '60001019906';
 
         const result = await mobiilId.authenticate(nationalIdentityNumber, phoneNumber);
         assert.match(result.challengeID, /[0-9]{4}/);
 
         const authResult = await mobiilId.statusAuth(result.sessionId, result.sessionHash);
         const personalInfo = {
-            firstName: 'EID2016',
-            lastName: 'TESTNUMBER',
-            pid: '60001017869',
+            firstName: 'MARY ÄNN',
+            lastName: 'O’CONNEŽ-ŠUSLIK TESTNUMBER',
+            pid: '60001019906',
             country: 'EE'
         };
 
